@@ -43,6 +43,8 @@ public class TemporarySettings: NSObject {
     @objc public var preferredCodec = PreferredCodec.auto
     @objc public var renderer: Renderer = .classic
 
+    @objc public var classicCurvedCurvature: Float = 0.3
+
     @objc public var realitykitRendererAnimateOpening: Bool = false
     @objc public var realitykitRendererCurvature: Float = 0.0
     @objc public var realitykitScreenCornerRadius: Float = 0.018
@@ -179,6 +181,7 @@ public class TemporarySettings: NSObject {
             self.dimPassthrough = settings.dimPassthrough?.boolValue ?? false
             
             self.realitykitImmersiveMode = UserDefaults.standard.bool(forKey: "realitykitImmersiveMode")
+            self.classicCurvedCurvature = UserDefaults.standard.object(forKey: "classicCurvedCurvature") as? Float ?? 0.3
             
             // --- HDR / COLOR LOADING ---
             self.brightness = settings.brightness?.floatValue ?? 1.0
@@ -208,6 +211,7 @@ public class TemporarySettings: NSObject {
     
     @objc public func save() {
         UserDefaults.standard.set(self.realitykitImmersiveMode, forKey: "realitykitImmersiveMode")
+        UserDefaults.standard.set(self.classicCurvedCurvature, forKey: "classicCurvedCurvature")
         UserDefaults.standard.set(self.autoResumeStreamOnReopen, forKey: "autoResumeStreamOnReopen")
         UserDefaults.standard.set(self.rememberStreamSettings, forKey: "rememberStreamSettings")
         UserDefaults.standard.set(self.uikitWindowCornerRadius, forKey: "uikitWindowCornerRadius")
@@ -396,16 +400,19 @@ extension TemporarySettings {
     
     public static var caseDisplayRepresentations: [Renderer : DisplayRepresentation] = [
         .classic: .init(stringLiteral: "UIKit (Classic)"),
+        .classicCurved: .init(stringLiteral: "Classic Curved"),
         .realitykit: .init(stringLiteral: "RealityKit (Experimental)"),
     ]
-    
+
     case classic
+    case classicCurved
     case realitykit
 
     // Swift-only computed property for mapping cases to strings
     var windowId: String {
         switch self {
         case .classic: return "classicStreamingWindow"
+        case .classicCurved: return "classicCurvedStreamingWindow"
         case .realitykit: return "realitykitStreamingWindow"
         }
     }

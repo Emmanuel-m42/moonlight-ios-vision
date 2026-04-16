@@ -291,9 +291,11 @@ extension MainViewModel {
     func getStreamDestination() -> StreamDestination {
         switch streamSettings.renderer {
         case .classic:
-            // UIKit renderer always uses a standard window
             return .window(id: "classicStreamingWindow")
-            
+
+        case .classicCurved:
+            return .window(id: "classicCurvedStreamingWindow")
+
         case .realitykit:
             // RealityKit renderer checks the new Immersive Mode toggle
             if streamSettings.realitykitImmersiveMode {

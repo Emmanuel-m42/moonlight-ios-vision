@@ -65,6 +65,7 @@
 		B1AC7CF12D4E011B0013B9A3 /* HDRParsingUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = B1AC7CEE2D4E011A0013B9A3 /* HDRParsingUtils.m */; };
 		B1EDB1352D4D95A700EB1839 /* StreamControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1EDB1332D4D95A700EB1839 /* StreamControls.swift */; };
 		B1EDB1362D4D95A700EB1839 /* DrawableVideoDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1EDB1302D4D95A700EB1839 /* DrawableVideoDecoder.swift */; };
+		CC000001CC000001CC000001 /* CurvedClassicStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000002CC000002CC000002 /* CurvedClassicStreamView.swift */; };
 		B1EDB1372D4D95A700EB1839 /* UIKitStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1EDB1342D4D95A700EB1839 /* UIKitStreamView.swift */; };
 		B1EDB1392D4D95A700EB1839 /* ObservableConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1EDB1312D4D95A700EB1839 /* ObservableConnectionManager.swift */; };
 		B1EDB13C2D4D95BF00EB1839 /* StreamConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1EDB13B2D4D95BF00EB1839 /* StreamConfiguration.swift */; };
@@ -76,7 +77,6 @@
 		E77582CF2D54020700948545 /* CVMetalHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E77582CE2D54020300948545 /* CVMetalHelpers.swift */; };
 		E77582EB2D5550D500948545 /* AudioHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E77582EA2D5550D200948545 /* AudioHelpers.swift */; };
 		F71801422B65483D00A9336B /* AppsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71801412B65483D00A9336B /* AppsView.swift */; };
-		F71801572B72FF0000A9336B /* StreamModeSelectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71801582B72FF0000A9336B /* StreamModeSelectionOverlay.swift */; };
 		F71801442B654D9100A9336B /* TemporaryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71801432B654D9100A9336B /* TemporaryApp.swift */; };
 		F71801452B65583700A9336B /* TemporaryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71801432B654D9100A9336B /* TemporaryApp.swift */; };
 		F71801462B65583700A9336B /* TemporaryApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71801432B654D9100A9336B /* TemporaryApp.swift */; };
@@ -87,6 +87,7 @@
 		F71801512B657DC900A9336B /* OrderedCollections in Frameworks */ = {isa = PBXBuildFile; productRef = F71801502B657DC900A9336B /* OrderedCollections */; };
 		F71801532B657DCF00A9336B /* OrderedCollections in Frameworks */ = {isa = PBXBuildFile; productRef = F71801522B657DCF00A9336B /* OrderedCollections */; };
 		F71801562B658C0900A9336B /* StreamFrameViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FB89462719F646E200339C8A /* StreamFrameViewController.m */; };
+		F71801572B72FF0000A9336B /* StreamModeSelectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71801582B72FF0000A9336B /* StreamModeSelectionOverlay.swift */; };
 		F7199AFB2B72F33000E6D62D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7199AFA2B72F33000E6D62D /* SettingsView.swift */; };
 		F7199AFE2B72FC1400E6D62D /* TemporarySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7199AFD2B72FC1400E6D62D /* TemporarySettings.swift */; };
 		F7199AFF2B72FC1400E6D62D /* TemporarySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7199AFD2B72FC1400E6D62D /* TemporarySettings.swift */; };
@@ -356,6 +357,7 @@
 		B1AC7CED2D4E00980013B9A3 /* HDRParsingUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HDRParsingUtils.h; sourceTree = "<group>"; };
 		B1AC7CEE2D4E011A0013B9A3 /* HDRParsingUtils.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HDRParsingUtils.m; sourceTree = "<group>"; };
 		B1EDB1302D4D95A700EB1839 /* DrawableVideoDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawableVideoDecoder.swift; sourceTree = "<group>"; };
+		CC000002CC000002CC000002 /* CurvedClassicStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurvedClassicStreamView.swift; sourceTree = "<group>"; };
 		B1EDB1312D4D95A700EB1839 /* ObservableConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservableConnectionManager.swift; sourceTree = "<group>"; };
 		B1EDB1332D4D95A700EB1839 /* StreamControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamControls.swift; sourceTree = "<group>"; };
 		B1EDB1342D4D95A700EB1839 /* UIKitStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIKitStreamView.swift; sourceTree = "<group>"; };
@@ -369,9 +371,9 @@
 		E77582EA2D5550D200948545 /* AudioHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioHelpers.swift; sourceTree = "<group>"; };
 		F1E2D3C4B5A6978869504132 /* StreamViewStubs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamViewStubs.swift; sourceTree = "<group>"; };
 		F71801412B65483D00A9336B /* AppsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppsView.swift; sourceTree = "<group>"; };
-		F71801582B72FF0000A9336B /* StreamModeSelectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamModeSelectionOverlay.swift; sourceTree = "<group>"; };
 		F71801432B654D9100A9336B /* TemporaryApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporaryApp.swift; sourceTree = "<group>"; };
 		F71801492B655C1F00A9336B /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
+		F71801582B72FF0000A9336B /* StreamModeSelectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamModeSelectionOverlay.swift; sourceTree = "<group>"; };
 		F7199AFA2B72F33000E6D62D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F7199AFD2B72FC1400E6D62D /* TemporarySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporarySettings.swift; sourceTree = "<group>"; };
 		F778956D2B65975900F02568 /* SDLMainWrapper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SDLMainWrapper.m; sourceTree = "<group>"; };
@@ -733,6 +735,7 @@
 				5924693D218D4AB18BB554DD /* AV1Parser.swift */,
 				F1E2D3C4B5A6978869504132 /* StreamViewStubs.swift */,
 				B1EDB1302D4D95A700EB1839 /* DrawableVideoDecoder.swift */,
+				CC000002CC000002CC000002 /* CurvedClassicStreamView.swift */,
 				B1EDB1312D4D95A700EB1839 /* ObservableConnectionManager.swift */,
 				3E8100A52ED566510011CB9F /* AV1Helper.h */,
 				3E8100A62ED5666B0011CB9F /* AV1Helper.m */,
@@ -1384,6 +1387,7 @@
 				C2769339D74B457E85143624 /* AV1Parser.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* StreamViewStubs.swift in Sources */,
 				B1EDB1362D4D95A700EB1839 /* DrawableVideoDecoder.swift in Sources */,
+				CC000001CC000001CC000001 /* CurvedClassicStreamView.swift in Sources */,
 				3E86FC1D2D4FFDF20016BB8E /* UpdatesView.swift in Sources */,
 				B1EDB1372D4D95A700EB1839 /* UIKitStreamView.swift in Sources */,
 				B1EDB1392D4D95A700EB1839 /* ObservableConnectionManager.swift in Sources */,
@@ -1617,7 +1621,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 2423V7K2Y5;
+				DEVELOPMENT_TEAM = 7LM4CMJ9QH;
 				ENABLE_MODULE_VERIFIER = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Limelight/Limelight-Prefix.pch";
@@ -1696,7 +1700,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 2423V7K2Y5;
+				DEVELOPMENT_TEAM = 7LM4CMJ9QH;
 				ENABLE_MODULE_VERIFIER = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Limelight/Limelight-Prefix.pch";
@@ -1996,7 +2000,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 2423V7K2Y5;
+				DEVELOPMENT_TEAM = 7LM4CMJ9QH;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Limelight/Limelight-Prefix.pch";
 				HEADER_SEARCH_PATHS = (
@@ -2048,7 +2052,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = 2423V7K2Y5;
+				DEVELOPMENT_TEAM = 7LM4CMJ9QH;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Limelight/Limelight-Prefix.pch";
 				HEADER_SEARCH_PATHS = (

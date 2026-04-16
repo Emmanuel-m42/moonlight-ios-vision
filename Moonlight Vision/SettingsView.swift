@@ -243,11 +243,25 @@ struct SettingsView: View {
                     
                     Picker(viewModel.localized("renderer"), selection: $settings.renderer) {
                         Text(viewModel.localized("uikit_classic")).tag(Renderer.classic)
+                        Text("Classic Curved").tag(Renderer.classicCurved)
                         Text(viewModel.localized("realitykit_native")).tag(Renderer.realitykit)
                     }
                     .onChange(of: settings.renderer) { _, _ in settings.save() }
                 }
-                
+
+                if settings.renderer == .classicCurved {
+                    Section(header: Text("Classic Curved Settings")) {
+                        Text("Screen Curvature")
+                        Slider(value: $settings.classicCurvedCurvature, in: 0...1, step: 0.001)
+                            .onChange(of: settings.classicCurvedCurvature) { _, _ in
+                                saveTimer?.invalidate()
+                                saveTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+                                    settings.save()
+                                }
+                            }
+                    }
+                }
+
                 if (settings.renderer == .realitykit) {
                     Section(header: Text(viewModel.localized("realitykit_settings")), footer: Text(viewModel.localized("realitykit_footer"))) {
                         Toggle(viewModel.localized("animate_screen_curve"), isOn: $settings.realitykitRendererAnimateOpening)

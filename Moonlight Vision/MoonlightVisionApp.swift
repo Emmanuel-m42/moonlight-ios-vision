@@ -100,7 +100,16 @@ struct MoonlightVisionApp: SwiftUI.App {
                 }
                 .immersionStyle(selection: $immersionManager.currentStyle, in: .mixed, .progressive, .full)
 
-                // 3. UIKit Window
+                // 3. Classic Curved Window
+                WindowGroup(id: "classicCurvedStreamingWindow", for: StreamConfiguration.self) { streamConfig in
+                    CurvedClassicStreamView(streamConfig: streamConfig)
+                        .id(streamConfig.wrappedValue?.sessionUUID ?? "none")
+                        .environmentObject(appDelegate.mainViewModel)
+                }
+                .windowStyle(.volumetric)
+                .defaultSize(width: 2.2, height: 1.4, depth: 0.5, in: .meters)
+
+                // 4. UIKit Window
                 WindowGroup(id: "classicStreamingWindow", for: StreamConfiguration.self) { streamConfig in
                     UIKitStreamView(streamConfig: streamConfig)
                     .id(streamConfig.wrappedValue?.sessionUUID ?? "none")
