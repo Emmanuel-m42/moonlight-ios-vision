@@ -84,6 +84,8 @@
 "stream_mode_volume_desc" = "3D 曲面屏";
 "stream_mode_immersive" = "沉浸式";
 "stream_mode_immersive_desc" = "全空间";
+"stream_mode_curved" = "经典曲面";
+"stream_mode_curved_desc" = "曲面体积窗口";
 "keyboard_active" = "键盘已激活";
 "tap_video_to_type" = "点击屏幕以输入";
 "uikit_keyboard_hint" = "点击屏幕打开键盘";

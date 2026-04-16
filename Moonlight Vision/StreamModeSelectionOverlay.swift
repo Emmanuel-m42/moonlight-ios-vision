@@ -10,6 +10,7 @@ import SwiftUI
 /// Stream mode options when launching a stream
 public enum StreamModeOption {
     case uikit          // UIKit flat/plane mode
+    case classicCurved  // Classic renderer on a curved volumetric mesh
     case realitykitVolume  // RealityKit volume window
     case realitykitImmersive // RealityKit immersive mode
 }
@@ -40,7 +41,16 @@ struct StreamModeSelectionOverlay: View {
                 ) {
                     onSelect(.uikit)
                 }
-                
+
+                // Classic Curved volume
+                StreamModeCard(
+                    icon: "tv",
+                    title: viewModel.localized("stream_mode_curved"),
+                    subtitle: viewModel.localized("stream_mode_curved_desc")
+                ) {
+                    onSelect(.classicCurved)
+                }
+
                 // RealityKit volume window
                 StreamModeCard(
                     icon: "square.stack.3d.up.fill",
@@ -50,7 +60,7 @@ struct StreamModeSelectionOverlay: View {
                 ) {
                     onSelect(.realitykitVolume)
                 }
-                
+
                 // RealityKit immersive
                 StreamModeCard(
                     icon: "viewfinder",
@@ -69,7 +79,7 @@ struct StreamModeSelectionOverlay: View {
             .buttonStyle(.bordered)
         }
         .padding(32)
-        .frame(maxWidth: 520)
+        .frame(maxWidth: 700)
         .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }

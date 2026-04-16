@@ -83,6 +83,8 @@
 "stream_mode_volume_desc" = "3D curved";
 "stream_mode_immersive" = "Immersive";
 "stream_mode_immersive_desc" = "Full space";
+"stream_mode_curved" = "Classic Curved";
+"stream_mode_curved_desc" = "Curved volume";
 "keyboard_active" = "Keyboard Active";
 "tap_video_to_type" = "Tap video to type";
 "uikit_keyboard_hint" = "Tap screen to open keyboard";

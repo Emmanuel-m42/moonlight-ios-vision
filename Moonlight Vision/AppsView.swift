@@ -158,6 +158,9 @@ struct AppsView: View {
         case .uikit:
             settings.renderer = .classic
             settings.realitykitImmersiveMode = false
+        case .classicCurved:
+            settings.renderer = .classicCurved
+            settings.realitykitImmersiveMode = false
         case .realitykitVolume:
             settings.renderer = .realitykit
             settings.realitykitImmersiveMode = false
@@ -187,10 +190,17 @@ struct AppsView: View {
             _ = try? await openImmersiveSpace(id: "realitykitImmersiveSpace", value: saved)
         } else if settings.renderer == .realitykit {
             dismissWindow(id: "classicStreamingWindow")
+            dismissWindow(id: "classicCurvedStreamingWindow")
             openWindow(id: "realitykitStreamingWindow", value: saved)
+            dismissWindow(id: "mainView")
+        } else if settings.renderer == .classicCurved {
+            dismissWindow(id: "classicStreamingWindow")
+            dismissWindow(id: "realitykitStreamingWindow")
+            openWindow(id: "classicCurvedStreamingWindow", value: saved)
             dismissWindow(id: "mainView")
         } else {
             dismissWindow(id: "realitykitStreamingWindow")
+            dismissWindow(id: "classicCurvedStreamingWindow")
             openWindow(id: "classicStreamingWindow", value: saved)
             dismissWindow(id: "mainView")
         }
@@ -219,6 +229,7 @@ struct AppsView: View {
         // Dismiss existing stream windows before opening new one
         dismissWindow(id: "realitykitStreamingWindow")
         dismissWindow(id: "classicStreamingWindow")
+        dismissWindow(id: "classicCurvedStreamingWindow")
 
         if settings.renderer == .realitykit && settings.realitykitImmersiveMode {
             dismissWindow(id: "mainView")
@@ -233,9 +244,12 @@ struct AppsView: View {
                 await dismissImmersiveSpace()
                 await MainActor.run {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        if settings.renderer == .realitykit {
+                        switch settings.renderer {
+                        case .realitykit:
                             openWindow(id: "realitykitStreamingWindow", value: config)
-                        } else {
+                        case .classicCurved:
+                            openWindow(id: "classicCurvedStreamingWindow", value: config)
+                        default:
                             openWindow(id: "classicStreamingWindow", value: config)
                         }
                     }
