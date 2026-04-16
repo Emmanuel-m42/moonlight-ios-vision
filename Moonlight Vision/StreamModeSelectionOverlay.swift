@@ -80,6 +80,8 @@ struct StreamModeSelectionOverlay: View {
         }
         .padding(32)
         .frame(maxWidth: 700)
+        .tint(Color(red: 0.043, green: 0.322, blue: 0.357))
+        .background(Color(red: 0.043, green: 0.322, blue: 0.357).opacity(0.18))
         .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }

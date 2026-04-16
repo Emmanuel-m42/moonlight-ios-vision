@@ -39,6 +39,8 @@ struct LanguagePromptView: View {
             .padding()
             .onAppear { selection = viewModel.currentLanguage }
         }
+        .tint(Color(red: 0.043, green: 0.322, blue: 0.357))
+        .background(Color(red: 0.043, green: 0.322, blue: 0.357).opacity(0.18))
     }
 }
 
