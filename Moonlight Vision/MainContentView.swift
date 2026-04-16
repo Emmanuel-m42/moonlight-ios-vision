@@ -196,6 +196,7 @@ struct MainContentView: View {
                 }
 
         }
+        .tint(Color(red: 0.043, green: 0.322, blue: 0.357))
         .sheet(isPresented: $viewModel.showLanguagePrompt) {
             LanguagePromptView()
                 .environmentObject(viewModel)
