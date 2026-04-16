@@ -56,10 +56,8 @@ struct CurvedClassicStreamView: View {
             teardown()
             dismissWindow(id: "classicCurvedStreamingWindow")
         }
-        .onReceive(connectionCallbacks.$connectionStatus) { status in
-            if status == "Failed" || status == "Terminated" {
-                teardown()
-            }
+        .onReceive(connectionCallbacks.$showAlert) { alert in
+            if alert { teardown() }
         }
     }
 
