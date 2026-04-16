@@ -69,6 +69,7 @@ struct MainContentView: View {
                     .padding() // Add some bottom padding for visual spacing
                     .buttonStyle(.plain) // Remove button styling to make it look like text
                 }
+                .background(Color(red: 0.043, green: 0.322, blue: 0.357).opacity(0.18))
                 .toolbar {
                     if viewModel.activelyStreaming {
                         ToolbarItem(placement: .cancellationAction) {
@@ -128,18 +129,21 @@ struct MainContentView: View {
                     }
                 }
             } detail: {
-                if showDeletionTriggeredMessage {
-                    Text(viewModel.localized("host_deletion_triggered"))
+                Group {
+                    if showDeletionTriggeredMessage {
+                        Text(viewModel.localized("host_deletion_triggered"))
+                    }
+                    else if let selectedHost = Binding<TemporaryHost>($selectedHost) {
+                        ComputerViewWrapper(selectedHost: $selectedHost)
+                            .environmentObject(viewModel)
+                    } else {
+                        // If the 'if let' above failed, it means the @State variable selectedHost was nil.
+                        // Display the placeholder view in this case.
+                        Text(viewModel.localized("no_host_selected"))
+                            .navigationTitle("") // Optionally clear title when nothing is selected
+                    }
                 }
-                else if let selectedHost = Binding<TemporaryHost>($selectedHost) {
-                    ComputerViewWrapper(selectedHost: $selectedHost)
-                        .environmentObject(viewModel)
-                } else {
-                    // If the 'if let' above failed, it means the @State variable selectedHost was nil.
-                    // Display the placeholder view in this case.
-                    Text(viewModel.localized("no_host_selected"))
-                        .navigationTitle("") // Optionally clear title when nothing is selected
-                }
+                .background(Color(red: 0.043, green: 0.322, blue: 0.357).opacity(0.18))
 
             }.tabItem {
                 Label(viewModel.localized("computers"), systemImage: "desktopcomputer")
