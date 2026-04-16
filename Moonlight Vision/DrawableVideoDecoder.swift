@@ -644,7 +644,7 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
             let result = DrSubmitDecodeUnit(du)
             LiCompleteVideoFrame(handle, result)
 
-            if framePacing && frameRate <= 60 {
+            if framePacing {
                 let displayRefreshRate = 1.0 / (sender.targetTimestamp - sender.timestamp)
                 if displayRefreshRate >= Double(frameRate) * 0.9 {
                     if LiGetPendingVideoFrames() == 1 {
@@ -688,7 +688,7 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
                 
                 var attributes: [CFString: Any] = [
                     kCVPixelBufferMetalCompatibilityKey: true,
-                    kCVPixelBufferPoolMinimumBufferCountKey: 3
+                    kCVPixelBufferPoolMinimumBufferCountKey: 6
                 ]
                 if hdrEnabled {
                     attributes[kCVPixelBufferPixelFormatTypeKey] = kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
