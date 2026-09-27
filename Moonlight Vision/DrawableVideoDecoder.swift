@@ -874,6 +874,11 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
                 }
                 
                 VTDecompressionSessionCreate(allocator: kCFAllocatorDefault, formatDescription: formatDesc, decoderSpecification: decoderConfiguration as CFDictionary, imageBufferAttributes: attributes as CFDictionary, outputCallback: &decoderCallback, decompressionSessionOut: &session)
+                if let session {
+                    // Ask the system to schedule decode work for real-time playback rather than
+                    // throughput; visionOS is always busy rendering while we stream.
+                    VTSessionSetProperty(session, key: kVTDecompressionPropertyKey_RealTime, value: kCFBooleanTrue)
+                }
 
                 DispatchQueue.main.async {
                     AudioHelpers.fixAudioForSurroundForCurrentWindow()
