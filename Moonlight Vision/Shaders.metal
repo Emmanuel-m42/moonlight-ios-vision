@@ -356,9 +356,9 @@ fragment half4 copyFragmentShaderHDR_EDR(
     return shadeYCbCrSample(in.uv, ySample, uvSample, params, full, enhancements);
 }
 
-// PyroWave decodes to separate Y, Cb and Cr planes. The host encodes 4:2:0 chroma
-// left-cosited, so shift chroma sampling by a quarter chroma texel to line it up
-// with centre-sampled luma; 4:4:4 planes need no shift.
+// PyroWave decodes to separate Y, Cb and Cr planes. Hosts that do their own conversion
+// send left-cosited 4:2:0 chroma, so chroma sampling shifts by a quarter chroma texel
+// to line it up with centre-sampled luma; centre-sited and 4:4:4 chroma need no shift.
 fragment half4 copyFragmentShaderPyroWave(
     CopyVertexOut in [[stage_in]],
     texture2d<float> yTex [[texture(0)]],
@@ -366,13 +366,14 @@ fragment half4 copyFragmentShaderPyroWave(
     texture2d<float> crTex [[texture(2)]],
     constant HDRParams &params [[buffer(0)]],
     constant FullHDRParams &full [[buffer(1)]],
-    constant ColorEnhancementUniforms &enhancements [[buffer(2)]]
+    constant ColorEnhancementUniforms &enhancements [[buffer(2)]],
+    constant uint &chromaCosited [[buffer(3)]]
 ) {
     constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
 
     float2 chromaUV = in.uv;
     float chromaWidth = float(cbTex.get_width());
-    if (chromaWidth < float(yTex.get_width())) {
+    if (chromaCosited != 0u && chromaWidth < float(yTex.get_width())) {
         chromaUV.x += 0.25 / chromaWidth;
     }
 

@@ -7,10 +7,12 @@
 #include "metal/pyrowave_metal.h"
 
 // Moonlight PyroWave frame container, as sent by PyroWave-enabled Vibepollo hosts:
-// "PYRW", version byte, big-endian u16 packet count, reserved zero byte, then per
-// packet a big-endian u32 length followed by the packet bytes.
+// "PYRW", version byte, big-endian u16 packet count, flags byte, then per packet a
+// big-endian u32 length followed by the packet bytes.
 static const size_t kFrameHeaderSize = 8;
 static const uint8_t kFrameVersion = 1;
+// Flags: full range, centre-sited chroma. Hosts that predate the flag send zero.
+static const uint8_t kFlagFullRangeCenterChroma = 0x01;
 
 static uint32_t readBe32(const uint8_t *p)
 {
@@ -102,10 +104,11 @@ static void logMessage(void *, const char *msg)
 - (BOOL)pushFrame:(const uint8_t *)data length:(size_t)length
 {
     if (length < kFrameHeaderSize || memcmp(data, "PYRW", 4) != 0 ||
-        data[4] != kFrameVersion || data[7] != 0) {
+        data[4] != kFrameVersion || (data[7] & ~kFlagFullRangeCenterChroma) != 0) {
         pyrowave_decoder_clear(_decoder);
         return NO;
     }
+    _fullRangeCenterChroma = (data[7] & kFlagFullRangeCenterChroma) != 0;
 
     const size_t packetCount = ((size_t)data[5] << 8) | data[6];
     size_t offset = kFrameHeaderSize;

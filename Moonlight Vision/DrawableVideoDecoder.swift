@@ -927,12 +927,15 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
         renderEncoder.setFragmentTexture(decoder.cbPlane, index: 1)
         renderEncoder.setFragmentTexture(decoder.crPlane, index: 2)
 
-        // PyroWave hosts send 8-bit SDR BT.709 limited range.
+        // PyroWave streams are 8-bit SDR BT.709; range and chroma siting come with each frame.
+        let fullRangeCenterChroma = decoder.fullRangeCenterChroma
         var shaderParams = YCbCrShaderParams(
-            is10Bit: 0, isFullRange: 0, isPQ: 0, matrixType: 0, primariesType: 0,
+            is10Bit: 0, isFullRange: fullRangeCenterChroma ? 1 : 0, isPQ: 0, matrixType: 0, primariesType: 0,
             isTargetDisplayP3: hdrEnabled ? 1 : 0
         )
         renderEncoder.setFragmentBytes(&shaderParams, length: MemoryLayout<YCbCrShaderParams>.size, index: 0)
+        var chromaCosited: UInt32 = fullRangeCenterChroma ? 0 : 1
+        renderEncoder.setFragmentBytes(&chromaCosited, length: MemoryLayout<UInt32>.size, index: 3)
 
         let full = hdrSettingsProvider?() ?? HDRParams(
             boost: 1.0, contrast: 1.0, saturation: 1.0, brightness: 0.0, pqExposure: 1.0, mode: 1
@@ -966,7 +969,7 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
 
         if !firstFrameEmitted {
             firstFrameEmitted = true
-            let debugLine = "Codec \(codecDescription(videoFormat)) | GPU wavelet decode | BT.709 limited"
+            let debugLine = "Codec \(codecDescription(videoFormat)) | GPU wavelet decode | BT.709 \(fullRangeCenterChroma ? "full" : "limited")"
             DispatchQueue.main.async { [debugInfoCallback] in
                 debugInfoCallback?(debugLine)
                 self.callbacks.videoContentShown()

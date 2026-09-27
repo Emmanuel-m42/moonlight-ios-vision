@@ -28,6 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) id<MTLTexture> cbPlane;
 @property (nonatomic, readonly) id<MTLTexture> crPlane;
 @property (nonatomic, readonly) BOOL chroma444;
+/// Colour signalling of the last pushed frame. YES: full range with centre-sited chroma
+/// (hosts using PyroWave's own RGB conversion). NO: limited range with left-cosited 4:2:0 chroma.
+@property (nonatomic, readonly) BOOL fullRangeCenterChroma;
 
 /// Parses one Moonlight "PYRW" frame container and queues its packets.
 /// Returns NO if the container is malformed or a packet does not parse; the
