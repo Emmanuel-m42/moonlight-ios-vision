@@ -13,6 +13,7 @@ import Foundation
 import OrderedCollections
 import VideoToolbox
 import AVFoundation
+import Metal
 #if os(visionOS)
 import SwiftUI
 #endif
@@ -696,6 +697,8 @@ class MainViewModel: NSObject, ObservableObject, DiscoveryCallback, PairCallback
         let H265: Int32 = 0x0100
         let H264: Int32 = 0x0001
         let H265_MAIN10: Int32 = 0x0200
+        let PYROWAVE: Int32 = 0x10000
+        let PYROWAVE_444: Int32 = 0x20000
 
         let av1_supported = VideoToolbox.VTIsHardwareDecodeSupported(kCMVideoCodecType_AV1)
         let hevc_supported = VideoToolbox.VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC)
@@ -713,6 +716,22 @@ class MainViewModel: NSObject, ObservableObject, DiscoveryCallback, PairCallback
         case .h264:
               config.supportedVideoFormats |= H264
               print("stream - Adding H264 support.")
+        case .pyrowave, .pyrowave444:
+              // PyroWave is only decoded by the RealityKit renderer. The host picks it only
+              // when it advertises PyroWave; otherwise HEVC / H.264 below are used.
+              if streamSettings.renderer == .realitykit,
+                 let probeDevice = MTLCreateSystemDefaultDevice(),
+                 PyroWaveFrameDecoder.isSupported(on: probeDevice) {
+                  config.supportedVideoFormats |= PYROWAVE
+                  if streamSettings.preferredCodec == .pyrowave444 {
+                      config.supportedVideoFormats |= PYROWAVE_444
+                  }
+                  print("stream - Adding PyroWave support (444: \(streamSettings.preferredCodec == .pyrowave444)).")
+              } else {
+                  print("stream - PyroWave requested but not available with this renderer/device; using HEVC/H.264.")
+              }
+              if hevc_supported { config.supportedVideoFormats |= H265 }
+              config.supportedVideoFormats |= H264
         case .auto:
               // Auto: Prioritize based on availability (e.g., AV1 > HEVC > H264)
               if av1_supported { config.supportedVideoFormats |= AV1_MAIN8; print("stream - Adding AV1_MAIN8 support (Auto).") }
@@ -739,7 +758,7 @@ class MainViewModel: NSObject, ObservableObject, DiscoveryCallback, PairCallback
                 print("stream - Adding AV1_MAIN10 support for HDR.")
             }
         }
-        print("stream - Final supportedVideoFormats: \(String(format: "0x%04X", config.supportedVideoFormats))")
+        print("stream - Final supportedVideoFormats: \(String(format: "0x%05X", config.supportedVideoFormats))")
 
         currentStreamConfig = config
         activelyStreaming = true

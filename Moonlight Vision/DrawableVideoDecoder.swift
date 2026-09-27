@@ -45,6 +45,16 @@ private struct ColorEnhancementUniforms {
     var padding1: Float
 }
 
+/// Matches `HDRParams` in Shaders.metal.
+private struct YCbCrShaderParams {
+    var is10Bit: UInt32
+    var isFullRange: UInt32
+    var isPQ: UInt32
+    var matrixType: UInt32
+    var primariesType: UInt32
+    var isTargetDisplayP3: UInt32
+}
+
 private struct ShaderFullHDRParams {
     var boost: Float
     var contrast: Float
@@ -137,6 +147,11 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
     private var ambilightPipelineState: MTLRenderPipelineState?
 
     private var firstFrameEmitted = false
+
+    /// PyroWave path: frames decode on the GPU straight into plane textures, bypassing VideoToolbox.
+    private var pyroWaveDecoder: PyroWaveFrameDecoder?
+    private var pyroWavePipelineState: MTLRenderPipelineState?
+    private var isPyroWave: Bool { (videoFormat & VIDEO_FORMAT_MASK_PYROWAVE) != 0 }
     private var lastAmbilightLogTime = Date.distantPast
     private var prevAmbilightTexture: MTLTexture?
 
@@ -516,6 +531,21 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
             blitEncoder.endEncoding()
         }
         
+        encodeAmbilight(commandBuffer: commandBuffer, drawable: drawable)
+
+        commandBuffer.commit()
+        drawable.present()
+
+        if !firstFrameEmitted {
+            firstFrameEmitted = true
+            DispatchQueue.main.async {
+                self.callbacks.videoContentShown()
+                print("DrawableVideoDecoder: First frame presented (PQ=\(isPQ), primariesType=\(primariesType), matrixType=\(matrixType))")
+            }
+        }
+    }
+
+    private func encodeAmbilight(commandBuffer: MTLCommandBuffer, drawable: TextureResource.Drawable) {
         let ambEnabled = enableAmbilightProvider?() ?? enableAmbilight
         if let ambQueue = ambilightQueue, ambEnabled, let ambDrawable = try? ambQueue.nextDrawable() {
             let targetMipLevel = 6
@@ -564,17 +594,6 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
             }
             
             ambDrawable.present()
-        }
-
-        commandBuffer.commit()
-        drawable.present()
-
-        if !firstFrameEmitted {
-            firstFrameEmitted = true
-            DispatchQueue.main.async {
-                self.callbacks.videoContentShown()
-                print("DrawableVideoDecoder: First frame presented (PQ=\(isPQ), primariesType=\(primariesType), matrixType=\(matrixType))")
-            }
         }
     }
 
@@ -667,6 +686,19 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
             print("Creating texture cache failed \(res)")
         }
 
+        if isPyroWave {
+            let chroma444 = (videoFormat & VIDEO_FORMAT_PYROWAVE_444) != 0
+            pyroWaveDecoder = PyroWaveFrameDecoder(
+                device: mtlDevice, width: Int(videoWidth), height: Int(videoHeight), chroma444: chroma444
+            )
+            if pyroWaveDecoder == nil {
+                print("DrawableVideoDecoder: PyroWave decoder creation failed for \(videoWidth)x\(videoHeight)")
+                DispatchQueue.main.async { [debugInfoCallback] in
+                    debugInfoCallback?("PyroWave decoder failed to start")
+                }
+            }
+        }
+
         setupLowLevelTexture()
     }
 
@@ -709,6 +741,8 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
         copyPipelineFormat = nil
         copyPipelineStateYUV = nil
         lastCopyFragment = nil
+        pyroWaveDecoder = nil
+        pyroWavePipelineState = nil
         
         // Reset so the next connection (reconnect) can fire videoContentShown again.
         firstFrameEmitted = false
@@ -751,6 +785,10 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
         bufferType: Int32,
         decode decodeUnit: PDECODE_UNIT!
     ) -> Int32 {
+        if isPyroWave {
+            return submitPyroWaveFrame(dataPtr, length: Int(length), bufferType: bufferType)
+        }
+
         if decodeUnit.pointee.frameType == FRAME_TYPE_IDR {
             if bufferType != BUFFER_TYPE_PICDATA {
                 if bufferType == BUFFER_TYPE_VPS
@@ -824,6 +862,117 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
         }
 
         return DR_OK
+    }
+
+    // MARK: - PyroWave
+
+    private func submitPyroWaveFrame(_ dataPtr: UnsafeMutablePointer<UInt8>, length: Int, bufferType: Int32) -> Int32 {
+        // Only picture data is handed over (and owned) here; PyroWave has no parameter sets.
+        guard bufferType == BUFFER_TYPE_PICDATA else { return DR_OK }
+        defer { free(dataPtr) }
+
+        guard let decoder = pyroWaveDecoder else { return DR_OK }
+
+        // Every PyroWave frame is intra-only, so a bad frame is simply skipped: the next
+        // one recovers on its own and there is never a reason to request an IDR frame.
+        guard decoder.pushFrame(dataPtr, length: length) else { return DR_OK }
+
+        // Drop rather than queue when the GPU is still busy with earlier frames.
+        if inflightSemaphore.wait(timeout: .now()) != .success {
+            decoder.reset()
+            return DR_OK
+        }
+
+        autoreleasepool {
+            renderPyroWaveFrame(decoder)
+        }
+        return DR_OK
+    }
+
+    private func renderPyroWaveFrame(_ decoder: PyroWaveFrameDecoder) {
+        guard let commandBuffer = commandQueue?.makeCommandBuffer() else {
+            inflightSemaphore.signal()
+            return
+        }
+        commandBuffer.label = "PyroWave frame"
+        commandBuffer.addCompletedHandler { [weak self] _ in
+            self?.inflightSemaphore.signal()
+        }
+
+        guard decoder.encodeDecode(to: commandBuffer),
+              let drawable = try? drawableQueue?.nextDrawable()
+        else {
+            commandBuffer.commit()
+            return
+        }
+
+        if pyroWavePipelineState == nil {
+            pyroWavePipelineState = buildCopyPipeline(fragment: "copyFragmentShaderPyroWave")
+        }
+
+        let renderPassDescriptor = MTLRenderPassDescriptor()
+        renderPassDescriptor.colorAttachments[0].texture = drawable.texture
+        renderPassDescriptor.colorAttachments[0].loadAction = .dontCare
+        renderPassDescriptor.colorAttachments[0].storeAction = .store
+
+        guard let pipeline = pyroWavePipelineState,
+              let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
+        else {
+            commandBuffer.commit()
+            return
+        }
+
+        renderEncoder.setRenderPipelineState(pipeline)
+        renderEncoder.setFragmentTexture(decoder.yPlane, index: 0)
+        renderEncoder.setFragmentTexture(decoder.cbPlane, index: 1)
+        renderEncoder.setFragmentTexture(decoder.crPlane, index: 2)
+
+        // PyroWave hosts send 8-bit SDR BT.709 limited range.
+        var shaderParams = YCbCrShaderParams(
+            is10Bit: 0, isFullRange: 0, isPQ: 0, matrixType: 0, primariesType: 0,
+            isTargetDisplayP3: hdrEnabled ? 1 : 0
+        )
+        renderEncoder.setFragmentBytes(&shaderParams, length: MemoryLayout<YCbCrShaderParams>.size, index: 0)
+
+        let full = hdrSettingsProvider?() ?? HDRParams(
+            boost: 1.0, contrast: 1.0, saturation: 1.0, brightness: 0.0, pqExposure: 1.0, mode: 1
+        )
+        var fullParams = ShaderFullHDRParams(
+            boost: full.boost,
+            contrast: full.contrast,
+            saturation: full.saturation,
+            brightness: full.brightness,
+            pqExposure: full.pqExposure,
+            mode: full.mode
+        )
+        renderEncoder.setFragmentBytes(&fullParams, length: MemoryLayout<ShaderFullHDRParams>.size, index: 1)
+
+        let satConWarm = enhancementsProvider?() ?? (1.0, 1.0, 0.0)
+        var enh = ColorEnhancementUniforms(saturation: satConWarm.0, contrast: satConWarm.1, warmth: satConWarm.2, padding1: 0)
+        renderEncoder.setFragmentBytes(&enh, length: MemoryLayout<ColorEnhancementUniforms>.size, index: 2)
+
+        renderEncoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+        renderEncoder.endEncoding()
+
+        if let blitEncoder = commandBuffer.makeBlitCommandEncoder() {
+            blitEncoder.generateMipmaps(for: drawable.texture)
+            blitEncoder.endEncoding()
+        }
+
+        encodeAmbilight(commandBuffer: commandBuffer, drawable: drawable)
+
+        commandBuffer.commit()
+        drawable.present()
+
+        if !firstFrameEmitted {
+            firstFrameEmitted = true
+            let debugLine = "Codec \(codecDescription(videoFormat)) | GPU wavelet decode | BT.709 limited"
+            DispatchQueue.main.async { [debugInfoCallback] in
+                debugInfoCallback?(debugLine)
+                self.callbacks.videoContentShown()
+                print("DrawableVideoDecoder: First PyroWave frame presented")
+            }
+        }
     }
 
     // MARK: - Helper: Recreate Format Description for IDR
@@ -978,6 +1127,9 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
     }
 
     private func codecDescription(_ format: Int32) -> String {
+        if (format & VIDEO_FORMAT_MASK_PYROWAVE) != 0 {
+            return (format & VIDEO_FORMAT_PYROWAVE_444) != 0 ? "PyroWave 4:4:4" : "PyroWave"
+        }
         if (format & VIDEO_FORMAT_MASK_AV1) != 0 {
             return (format & VIDEO_FORMAT_AV1_MAIN10) != 0 ? "AV1 Main10" : "AV1"
         }
@@ -1037,7 +1189,7 @@ class DrawableVideoDecoder: NSObject, AnyVideoDecoderRenderer {
         var sampleBuffer: CMSampleBuffer?
         var sampleTiming = CMSampleTimingInfo(
             duration: CMTime.invalid,
-            presentationTimeStamp: CMTimeMake(value: Int64(decodeUnit.pointee.presentationTimeMs), timescale: 1000),
+            presentationTimeStamp: CMTimeMake(value: Int64(decodeUnit.pointee.presentationTimeUs), timescale: 1_000_000),
             decodeTimeStamp: CMTime.invalid
         )
         let statusSample = CMSampleBufferCreateReady(
@@ -1323,6 +1475,11 @@ let VIDEO_FORMAT_MASK_H264: Int32 = 0x000F
 let VIDEO_FORMAT_MASK_H265: Int32 = 0x0F00
 let VIDEO_FORMAT_MASK_AV1: Int32 = 0xF000
 let VIDEO_FORMAT_MASK_10BIT: Int32 = 0x2200
+
+// PyroWave (Moonlight extension); see moonlight-common-c Limelight.h
+let VIDEO_FORMAT_PYROWAVE: Int32 = 0x10000
+let VIDEO_FORMAT_PYROWAVE_444: Int32 = 0x20000
+let VIDEO_FORMAT_MASK_PYROWAVE: Int32 = VIDEO_FORMAT_PYROWAVE | VIDEO_FORMAT_PYROWAVE_444
 
 let FRAME_TYPE_IDR = 0x01
 let BUFFER_TYPE_PICDATA = 0x00

@@ -607,6 +607,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B10D61AE2D54D0F600550218 /* AppIntents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AppIntents; sourceTree = "<group>"; };
+		C0DEF00D0000000000000001 /* PyroWave */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PyroWave; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -787,6 +788,7 @@
 			isa = PBXGroup;
 			children = (
 				B10D61AE2D54D0F600550218 /* AppIntents */,
+				C0DEF00D0000000000000001 /* PyroWave */,
 				F71801412B65483D00A9336B /* AppsView.swift */,
 				E77582EA2D5550D200948545 /* AudioHelpers.swift */,
 				3E8100A52ED566510011CB9F /* AV1Helper.h */,
@@ -1264,6 +1266,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				B10D61AE2D54D0F600550218 /* AppIntents */,
+				C0DEF00D0000000000000001 /* PyroWave */,
 			);
 			name = "Moonlight XrOS";
 			packageProductDependencies = (
@@ -1711,7 +1714,10 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(PROJECT_DIR)/moonlight-common/moonlight-common-c/src",
 					"$(SDKROOT)/usr/include/libxml2/**",
-					"$(PROJECT_DIR)/libs/**",
+					"$(PROJECT_DIR)/libs/FFmpeg/include",
+					"$(PROJECT_DIR)/libs/SDL2/include",
+					"$(PROJECT_DIR)/libs/opus/include",
+					"$(PROJECT_DIR)/libs/opus/include/opus",
 				);
 				INFOPLIST_FILE = "Moonlight copy-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
@@ -1728,7 +1734,12 @@
 				);
 				MARKETING_VERSION = 11.0.22;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu99 gnu++11";
-				OTHER_LDFLAGS = "-Wl,-ld_classic";
+				OTHER_LDFLAGS = (
+					"-Wl,-ld_classic",
+					"-liconv",
+					"-lz",
+				);
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream-beta.Moonlight-Vision-luma";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
@@ -1770,7 +1781,10 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(PROJECT_DIR)/moonlight-common/moonlight-common-c/src",
 					"$(SDKROOT)/usr/include/libxml2/**",
-					"$(PROJECT_DIR)/libs/**",
+					"$(PROJECT_DIR)/libs/FFmpeg/include",
+					"$(PROJECT_DIR)/libs/SDL2/include",
+					"$(PROJECT_DIR)/libs/opus/include",
+					"$(PROJECT_DIR)/libs/opus/include/opus",
 				);
 				INFOPLIST_FILE = "Moonlight copy-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
@@ -1787,7 +1801,12 @@
 				);
 				MARKETING_VERSION = 11.0.22;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu99 gnu++11";
-				OTHER_LDFLAGS = "-Wl,-ld_classic";
+				OTHER_LDFLAGS = (
+					"-Wl,-ld_classic",
+					"-liconv",
+					"-lz",
+				);
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream-beta.Moonlight-Vision-luma";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";

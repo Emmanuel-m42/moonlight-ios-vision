@@ -430,6 +430,10 @@ extension TemporarySettings {
     case h264
     case hevc
     case av1
+    // PyroWave intra-only wavelet codec (visionOS RealityKit renderer only).
+    // Hosts without PyroWave support fall back to HEVC / H.264.
+    case pyrowave
+    case pyrowave444
 }
 
 @objc public enum Renderer: UInt8, Codable, Sendable, AppEnum {

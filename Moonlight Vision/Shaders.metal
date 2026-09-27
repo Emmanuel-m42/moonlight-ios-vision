@@ -263,18 +263,18 @@ vertex CopyVertexOut copyVertexShader(ushort vid [[vertex_id]]) {
 }
 
 // MARK: - Curved Display Shaders (Standard Linear - Optimized for VR)
-fragment half4 copyFragmentShaderHDR_EDR(
-    CopyVertexOut in [[stage_in]],
-    texture2d<float> yTex [[texture(0)]],
-    texture2d<float> cbcrTex [[texture(1)]],
-    constant HDRParams &params [[buffer(0)]],
-    constant FullHDRParams &full [[buffer(1)]],
-    constant ColorEnhancementUniforms &enhancements [[buffer(2)]]
+// Shared Y'CbCr -> display colour path for the RealityKit renderer, used by both the
+// VideoToolbox bi-planar path and the PyroWave three-plane path.
+static half4 shadeYCbCrSample(
+    float2 uv,
+    float ySample,
+    float2 uvSample,
+    constant HDRParams &params,
+    constant FullHDRParams &full,
+    constant ColorEnhancementUniforms &enhancements
 ) {
-    constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
-
-    float ySample = yTex.sample(s, in.uv).r;
-    float2 uvSample = cbcrTex.sample(s, in.uv).rg;
+    CopyVertexOut in;
+    in.uv = uv;
 
     float3 rgb_nl;
     if (params.matrixType == 1u) {
@@ -337,6 +337,49 @@ fragment half4 copyFragmentShaderHDR_EDR(
     }
 
     return half4(half3(finalColor), 1.0h);
+}
+
+
+fragment half4 copyFragmentShaderHDR_EDR(
+    CopyVertexOut in [[stage_in]],
+    texture2d<float> yTex [[texture(0)]],
+    texture2d<float> cbcrTex [[texture(1)]],
+    constant HDRParams &params [[buffer(0)]],
+    constant FullHDRParams &full [[buffer(1)]],
+    constant ColorEnhancementUniforms &enhancements [[buffer(2)]]
+) {
+    constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
+
+    float ySample = yTex.sample(s, in.uv).r;
+    float2 uvSample = cbcrTex.sample(s, in.uv).rg;
+
+    return shadeYCbCrSample(in.uv, ySample, uvSample, params, full, enhancements);
+}
+
+// PyroWave decodes to separate Y, Cb and Cr planes. The host encodes 4:2:0 chroma
+// left-cosited, so shift chroma sampling by a quarter chroma texel to line it up
+// with centre-sampled luma; 4:4:4 planes need no shift.
+fragment half4 copyFragmentShaderPyroWave(
+    CopyVertexOut in [[stage_in]],
+    texture2d<float> yTex [[texture(0)]],
+    texture2d<float> cbTex [[texture(1)]],
+    texture2d<float> crTex [[texture(2)]],
+    constant HDRParams &params [[buffer(0)]],
+    constant FullHDRParams &full [[buffer(1)]],
+    constant ColorEnhancementUniforms &enhancements [[buffer(2)]]
+) {
+    constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::linear);
+
+    float2 chromaUV = in.uv;
+    float chromaWidth = float(cbTex.get_width());
+    if (chromaWidth < float(yTex.get_width())) {
+        chromaUV.x += 0.25 / chromaWidth;
+    }
+
+    float ySample = yTex.sample(s, in.uv).r;
+    float2 uvSample = float2(cbTex.sample(s, chromaUV).r, crTex.sample(s, chromaUV).r);
+
+    return shadeYCbCrSample(in.uv, ySample, uvSample, params, full, enhancements);
 }
 
 fragment half4 copyFragmentShaderHEVC_EDR(

@@ -262,6 +262,9 @@ struct SettingsView: View {
                             Text(viewModel.localized("av1")).tag(PreferredCodec.av1)
                         }
                         
+                        Text("PyroWave (Experimental)").tag(PreferredCodec.pyrowave)
+                        Text("PyroWave 4:4:4 (Experimental)").tag(PreferredCodec.pyrowave444)
+
                         Text(viewModel.localized("auto")).tag(PreferredCodec.auto)
                     } label: {
                         Label(viewModel.localized("preferred_codec"), systemImage: "video")

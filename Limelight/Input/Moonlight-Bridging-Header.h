@@ -37,4 +37,5 @@
 
 #if TARGET_OS_VISION
 #import "SDLMainWrapper.h"
+#import "PyroWaveFrameDecoder.h"
 #endif

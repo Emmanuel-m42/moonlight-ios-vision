@@ -24,6 +24,8 @@
     CODEC_PREF_H264,
     CODEC_PREF_HEVC,
     CODEC_PREF_AV1,
+    CODEC_PREF_PYROWAVE,
+    CODEC_PREF_PYROWAVE_444,
 } preferredCodec;
 @property (nonatomic) BOOL useFramePacing;
 @property (nonatomic) BOOL multiController;

@@ -136,6 +136,10 @@ void DrStop(void)
             else {
                 return @"AV1 10-bit SDR";
             }
+        case VIDEO_FORMAT_PYROWAVE:
+            return @"PyroWave";
+        case VIDEO_FORMAT_PYROWAVE_444:
+            return @"PyroWave 4:4:4";
         default:
             return @"UNKNOWN";
     }
