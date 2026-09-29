@@ -9,6 +9,9 @@
 #import "VideoDecoderRenderer.h"
 #import "StreamView.h"
 #import "NSData+Conversion.h"
+#if TARGET_OS_VISION
+#import "PyroWaveLayerRenderer.h"
+#endif
 
 #include <libavcodec/avcodec.h>
 #include <libavcodec/cbs.h>
@@ -38,6 +41,16 @@ extern int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size,
     BOOL framePacing;
     
     CGRect _lastKnownSize;
+
+#if TARGET_OS_VISION
+    // PyroWave streams bypass AVSampleBufferDisplayLayer and present through a Metal layer.
+    PyroWaveLayerRenderer *_pyroRenderer;
+    // With Frame Pacing = Lowest Latency, PyroWave frames are decoded on arrival by this thread
+    // instead of on the next display-link tick.
+    NSThread *_pyroDecodeThread;
+    NSLock *_pyroDecodeLock;
+    BOOL _pyroDecodeActive;
+#endif
 }
 
 - (void)reinitializeDisplayLayer
@@ -82,6 +95,14 @@ extern int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size,
     [_view.widthAnchor constraintEqualToAnchor:_view.heightAnchor multiplier:_streamAspectRatio].active = true;
     
     _lastKnownSize = _view.bounds;
+
+#if TARGET_OS_VISION
+    if (_pyroRenderer != nil) {
+        _pyroRenderer.layer.position = displayLayer.position;
+        _pyroRenderer.layer.bounds = displayLayer.bounds;
+        [_view.layer addSublayer:_pyroRenderer.layer];
+    }
+#endif
 }
 
 - (id)initWithView:(StreamView*)view callbacks:(id<ConnectionCallbacks>)callbacks streamAspectRatio:(float)aspectRatio useFramePacing:(BOOL)useFramePacing
@@ -104,10 +125,48 @@ extern int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size,
 {
     self->videoFormat = videoFormat;
     self->frameRate = frameRate;
+
+#if TARGET_OS_VISION
+    if (videoFormat & VIDEO_FORMAT_MASK_PYROWAVE) {
+        void (^createRenderer)(void) = ^{
+            id<ConnectionCallbacks> callbacks = self->_callbacks;
+            self->_pyroRenderer = [[PyroWaveLayerRenderer alloc] initWithWidth:videoWidth
+                                                                        height:videoHeight
+                                                                     chroma444:(videoFormat & VIDEO_FORMAT_PYROWAVE_444) != 0
+                                                             firstFrameHandler:^{
+                [callbacks videoContentShown];
+            }];
+            if (self->_pyroRenderer == nil) {
+                Log(LOG_E, @"PyroWave: failed to create the UIKit renderer");
+                return;
+            }
+            self->_pyroRenderer.layer.position = self->displayLayer.position;
+            self->_pyroRenderer.layer.bounds = self->displayLayer.bounds;
+            [self->_view.layer addSublayer:self->_pyroRenderer.layer];
+        };
+        if ([NSThread isMainThread]) {
+            createRenderer();
+        } else {
+            dispatch_sync(dispatch_get_main_queue(), createRenderer);
+        }
+    }
+#endif
 }
 
 - (void)start
 {
+#if TARGET_OS_VISION
+    if (_pyroRenderer != nil && !framePacing) {
+        _pyroDecodeLock = [NSLock new];
+        _pyroDecodeActive = YES;
+        _pyroDecodeThread = [[NSThread alloc] initWithTarget:self selector:@selector(pyroDecodeLoop) object:nil];
+        _pyroDecodeThread.name = @"Moonlight PyroWave decode";
+        _pyroDecodeThread.qualityOfService = NSQualityOfServiceUserInteractive;
+        [_pyroDecodeThread start];
+        return;
+    }
+#endif
+
     _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(displayLinkCallback:)];
     if (@available(iOS 15.0, tvOS 15.0, *)) {
         _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(self->frameRate, self->frameRate, self->frameRate);
@@ -150,7 +209,31 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
 - (void)stop
 {
     [_displayLink invalidate];
+
+#if TARGET_OS_VISION
+    // The decode thread exits once the library shuts the frame queue down, right after this
+    // call; it must not be joined here.
+    [_pyroDecodeLock lock];
+    _pyroDecodeActive = NO;
+    [_pyroDecodeLock unlock];
+#endif
 }
+
+#if TARGET_OS_VISION
+- (void)pyroDecodeLoop
+{
+    VIDEO_FRAME_HANDLE handle;
+    PDECODE_UNIT du;
+
+    // Returns NO once the connection shuts the frame queue down.
+    while (LiWaitForNextVideoFrame(&handle, &du)) {
+        [_pyroDecodeLock lock];
+        int result = _pyroDecodeActive ? DrSubmitDecodeUnit(du) : DR_OK;
+        [_pyroDecodeLock unlock];
+        LiCompleteVideoFrame(handle, result);
+    }
+}
+#endif
 
 #define NALU_START_PREFIX_SIZE 3
 #define NAL_LENGTH_PREFIX_SIZE 4
@@ -412,6 +495,19 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
 - (int)submitDecodeBuffer:(unsigned char *)data length:(int)length bufferType:(int)bufferType decodeUnit:(PDECODE_UNIT)du
 {
     OSStatus status;
+
+#if TARGET_OS_VISION
+    if (_pyroRenderer != nil) {
+        // PyroWave frames are opaque picture data; only picture data is owned (and freed) here.
+        if (bufferType != BUFFER_TYPE_PICDATA) {
+            return DR_OK;
+        }
+        [_pyroRenderer submitFrame:data length:length];
+        free(data);
+        // Intra-only: never needs an IDR frame.
+        return DR_OK;
+    }
+#endif
     
     // Construct a new format description object each time we receive an IDR frame
     if (du->frameType == FRAME_TYPE_IDR) {

@@ -16,13 +16,15 @@ NS_ASSUME_NONNULL_BEGIN
 /// Whether this Metal device can run the PyroWave decoder (Apple7 family and up).
 + (BOOL)isSupportedOnDevice:(id<MTLDevice>)device;
 
+/// highPrecision allocates 16-bit planes, needed for HDR10 (PQ) streams; otherwise 8-bit.
 - (nullable instancetype)initWithDevice:(id<MTLDevice>)device
                                   width:(NSInteger)width
                                  height:(NSInteger)height
-                              chroma444:(BOOL)chroma444 NS_DESIGNATED_INITIALIZER;
+                              chroma444:(BOOL)chroma444
+                          highPrecision:(BOOL)highPrecision NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-/// Luma plane, width x height, r8Unorm.
+/// Luma plane, width x height, r8Unorm or r16Unorm.
 @property (nonatomic, readonly) id<MTLTexture> yPlane;
 /// Chroma planes, half size for 4:2:0 or full size for 4:4:4, r8Unorm.
 @property (nonatomic, readonly) id<MTLTexture> cbPlane;
@@ -31,6 +33,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// Colour signalling of the last pushed frame. YES: full range with centre-sited chroma
 /// (hosts using PyroWave's own RGB conversion). NO: limited range with left-cosited 4:2:0 chroma.
 @property (nonatomic, readonly) BOOL fullRangeCenterChroma;
+/// YES if the last pushed frame is HDR10: SMPTE ST 2084 (PQ), BT.2020 primaries and matrix.
+@property (nonatomic, readonly) BOOL hdr10;
 
 /// Parses one Moonlight "PYRW" frame container and queues its packets.
 /// Returns NO if the container is malformed or a packet does not parse; the

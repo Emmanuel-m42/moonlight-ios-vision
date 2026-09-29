@@ -13,6 +13,9 @@ static const size_t kFrameHeaderSize = 8;
 static const uint8_t kFrameVersion = 1;
 // Flags: full range, centre-sited chroma. Hosts that predate the flag send zero.
 static const uint8_t kFlagFullRangeCenterChroma = 0x01;
+// Flags: HDR10 (PQ, BT.2020). Without it the frame is SDR BT.709.
+static const uint8_t kFlagHdr10 = 0x02;
+static const uint8_t kKnownFlags = kFlagFullRangeCenterChroma | kFlagHdr10;
 
 static uint32_t readBe32(const uint8_t *p)
 {
@@ -38,6 +41,7 @@ static void logMessage(void *, const char *msg)
                                   width:(NSInteger)width
                                  height:(NSInteger)height
                               chroma444:(BOOL)chroma444
+                          highPrecision:(BOOL)highPrecision
 {
     if ((self = [super init])) {
         _chroma444 = chroma444;
@@ -65,9 +69,10 @@ static void logMessage(void *, const char *msg)
 
         NSInteger chromaWidth = chroma444 ? width : width / 2;
         NSInteger chromaHeight = chroma444 ? height : height / 2;
-        _yPlane = [self makePlaneOnDevice:device width:width height:height label:@"PyroWave Y"];
-        _cbPlane = [self makePlaneOnDevice:device width:chromaWidth height:chromaHeight label:@"PyroWave Cb"];
-        _crPlane = [self makePlaneOnDevice:device width:chromaWidth height:chromaHeight label:@"PyroWave Cr"];
+        MTLPixelFormat format = highPrecision ? MTLPixelFormatR16Unorm : MTLPixelFormatR8Unorm;
+        _yPlane = [self makePlaneOnDevice:device format:format width:width height:height label:@"PyroWave Y"];
+        _cbPlane = [self makePlaneOnDevice:device format:format width:chromaWidth height:chromaHeight label:@"PyroWave Cb"];
+        _crPlane = [self makePlaneOnDevice:device format:format width:chromaWidth height:chromaHeight label:@"PyroWave Cr"];
         if (!_yPlane || !_cbPlane || !_crPlane) {
             return nil;
         }
@@ -76,11 +81,12 @@ static void logMessage(void *, const char *msg)
 }
 
 - (nullable id<MTLTexture>)makePlaneOnDevice:(id<MTLDevice>)device
+                                      format:(MTLPixelFormat)format
                                        width:(NSInteger)width
                                       height:(NSInteger)height
                                        label:(NSString *)label
 {
-    MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
+    MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
                                                                                     width:width
                                                                                    height:height
                                                                                 mipmapped:NO];
@@ -104,11 +110,12 @@ static void logMessage(void *, const char *msg)
 - (BOOL)pushFrame:(const uint8_t *)data length:(size_t)length
 {
     if (length < kFrameHeaderSize || memcmp(data, "PYRW", 4) != 0 ||
-        data[4] != kFrameVersion || (data[7] & ~kFlagFullRangeCenterChroma) != 0) {
+        data[4] != kFrameVersion || (data[7] & ~kKnownFlags) != 0) {
         pyrowave_decoder_clear(_decoder);
         return NO;
     }
     _fullRangeCenterChroma = (data[7] & kFlagFullRangeCenterChroma) != 0;
+    _hdr10 = (data[7] & kFlagHdr10) != 0;
 
     const size_t packetCount = ((size_t)data[5] << 8) | data[6];
     size_t offset = kFrameHeaderSize;

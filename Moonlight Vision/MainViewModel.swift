@@ -717,10 +717,9 @@ class MainViewModel: NSObject, ObservableObject, DiscoveryCallback, PairCallback
               config.supportedVideoFormats |= H264
               print("stream - Adding H264 support.")
         case .pyrowave, .pyrowave444:
-              // PyroWave is only decoded by the RealityKit renderer. The host picks it only
+              // Both the RealityKit and UIKit renderers decode PyroWave. The host picks it only
               // when it advertises PyroWave; otherwise HEVC / H.264 below are used.
-              if streamSettings.renderer == .realitykit,
-                 let probeDevice = MTLCreateSystemDefaultDevice(),
+              if let probeDevice = MTLCreateSystemDefaultDevice(),
                  PyroWaveFrameDecoder.isSupported(on: probeDevice) {
                   config.supportedVideoFormats |= PYROWAVE
                   if streamSettings.preferredCodec == .pyrowave444 {
@@ -728,7 +727,7 @@ class MainViewModel: NSObject, ObservableObject, DiscoveryCallback, PairCallback
                   }
                   print("stream - Adding PyroWave support (444: \(streamSettings.preferredCodec == .pyrowave444)).")
               } else {
-                  print("stream - PyroWave requested but not available with this renderer/device; using HEVC/H.264.")
+                  print("stream - PyroWave requested but not supported on this device; using HEVC/H.264.")
               }
               if hevc_supported { config.supportedVideoFormats |= H265 }
               config.supportedVideoFormats |= H264
