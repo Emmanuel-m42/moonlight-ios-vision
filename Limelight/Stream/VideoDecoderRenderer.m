@@ -227,6 +227,16 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
 
     // Returns NO once the connection shuts the frame queue down.
     while (LiWaitForNextVideoFrame(&handle, &du)) {
+        // Every PyroWave frame is intra-coded, so when frames have piled up (e.g. after a
+        // network stall) only the newest needs decoding; older ones are released unseen.
+        VIDEO_FRAME_HANDLE newerHandle;
+        PDECODE_UNIT newerDu;
+        while (LiGetPendingVideoFrames() > 0 && LiPollNextVideoFrame(&newerHandle, &newerDu)) {
+            LiCompleteVideoFrame(handle, DR_OK);
+            handle = newerHandle;
+            du = newerDu;
+        }
+
         [_pyroDecodeLock lock];
         int result = _pyroDecodeActive ? DrSubmitDecodeUnit(du) : DR_OK;
         [_pyroDecodeLock unlock];

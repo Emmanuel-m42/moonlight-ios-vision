@@ -76,7 +76,9 @@ static const long kMaxFramesInFlight = 3;
         CGColorSpaceRelease(colorSpace);
         _layer.framebufferOnly = YES;
         _layer.drawableSize = CGSizeMake(width, height);
-        _layer.maximumDrawableCount = 3;
+        // Two drawables: frames are presented as soon as they are decoded, so a third would only
+        // add a frame of queueing when the compositor falls behind.
+        _layer.maximumDrawableCount = 2;
         _layer.backgroundColor = UIColor.blackColor.CGColor;
         _layer.hidden = YES;
 
